@@ -2,7 +2,7 @@
 mapboxgl.accessToken = "pk.eyJ1IjoiZGFya3Jvc2UyNSIsImEiOiJjbXVsYTlodGUwMXc4MnhyMTNyanI0cG1rIn0.6u_VFb4AzPL0MACkAgVuNQ";
 
 /* Fictional demo vehicles around SUIIT, Burla */
-const vehicles = [
+let vehicles = [
   { id: "AMB-001", type: "ambulance", driver: "Raj Kumar", phone: "+91 90000 00001", lng: 83.8868, lat: 21.4858, available: true },
   { id: "AMB-002", type: "ambulance", driver: "Amit Das", phone: "+91 90000 00002", lng: 83.8819, lat: 21.4808, available: true },
   { id: "AMB-003", type: "ambulance", driver: "Rahul Singh", phone: "+91 90000 00003", lng: 83.8910, lat: 21.4885, available: false },
@@ -52,17 +52,19 @@ function initMap() {
 
   map = new mapboxgl.Map({
     container: "map",
-    style: "mapbox://styles/mapbox/dark-v11",
+    style: mapStyle(),
     center: [83.88427, 21.48383],
     zoom: 14
   });
 
   map.addControl(new mapboxgl.NavigationControl(), "top-right");
 
-  map.on("load", () => {
+  /* style.load also fires after a theme switch, so layers are restored */
+  map.on("style.load", () => {
     addTrafficLayer();
-    map.resize();
+    redrawRoutes();
   });
+  map.on("load", () => map.resize());
 
   map.on("error", event => {
     console.warn("Mapbox error:", event.error);
@@ -161,10 +163,11 @@ $("findButton").onclick = async () => {
 
   try {
     initMap();
-    emergencyLocation = await geocode(query);
+    emergencyLocation = pendingCoords || await geocode(query);
 
     showEmergencyLocation();
     renderNearbyVehicles();
+    await registerEmergency(query);
   } catch (error) {
     console.error(error);
     results.innerHTML = `
@@ -359,6 +362,7 @@ async function acceptRequest(vehicle) {
   vehicle.available = false;
   selectedVehicle = vehicle;
   updateCounts();
+  apiDispatch(vehicle);
 
   driverPanel.innerHTML = `
     <h3>✓ Request Accepted</h3>
@@ -514,6 +518,7 @@ function renderRouteOptions() {
 
 /* Select a route and animate the vehicle */
 function selectRoute(index) {
+  currentRoute = index;
   const route = routeData[index];
   if (!route) return;
 
@@ -584,6 +589,7 @@ function startVehicleAnimation(vehicle, coordinates) {
     if (segment >= coordinates.length - 1) {
       movingMarker.setLngLat(emergencyLocation);
       moveTimer = null;
+      apiComplete();
 
       const status = document.querySelector(".dispatch-status");
       if (status) {
@@ -662,6 +668,7 @@ function returnHome() {
   if (selectedVehicle) {
     selectedVehicle.available = true;
   }
+  apiComplete();
   updateCounts();
 
   if (emergencyMarker) {
@@ -677,6 +684,8 @@ function returnHome() {
 
   emergencyLocation = null;
   selectedVehicle = null;
+  currentEmergencyId = null;
+  pendingCoords = null;
 
   results.innerHTML = "";
   driverPanel.innerHTML = "";
@@ -699,3 +708,197 @@ function returnHome() {
     if (map) map.resize();
   }, 300);
 }
+
+/* =====================================================
+   UPGRADE: backend, theme toggle, live location, history
+   ===================================================== */
+const API_BASE = location.port === "3000" ? "" : "http://localhost:3000";
+const root = document.documentElement;
+let backendOnline = false;
+let currentEmergencyId = null;
+let currentRoute = 0;
+let pendingCoords = null;
+
+/* ---- tiny fetch wrapper ---- */
+async function api(method, path, body) {
+  const res = await fetch(API_BASE + path, {
+    method,
+    headers: { "Content-Type": "application/json" },
+    body: body ? JSON.stringify(body) : undefined
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || "Request failed");
+  return data;
+}
+
+function toast(msg, ms = 4000) {
+  const t = document.createElement("div");
+  t.className = "toast";
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), ms);
+}
+
+function setBackend(on) {
+  backendOnline = on;
+  const b = $("backendBadge");
+  b.className = "badge " + (on ? "online" : "offline");
+  b.textContent = on ? "● Backend connected" : "● Offline mode";
+}
+
+async function loadVehicles() {
+  try {
+    vehicles = await api("GET", "/api/vehicles");
+    setBackend(true);
+  } catch {
+    setBackend(false);   /* falls back to the built-in demo vehicles */
+  }
+  updateCounts();
+  loadHistory();
+}
+
+async function registerEmergency(query) {
+  currentEmergencyId = null;
+  if (!backendOnline) return;
+  try {
+    const { emergency } = await api("POST", "/api/emergencies", {
+      type: $("emergencyType").value,
+      query,
+      lng: emergencyLocation[0],
+      lat: emergencyLocation[1]
+    });
+    currentEmergencyId = emergency.id;
+    loadHistory();
+  } catch (e) {
+    console.warn("Could not save emergency:", e.message);
+  }
+}
+
+async function apiDispatch(vehicle) {
+  if (!backendOnline || !currentEmergencyId) return;
+  try {
+    await api("POST", `/api/emergencies/${currentEmergencyId}/dispatch`, { vehicleId: vehicle.id });
+    loadHistory();
+  } catch (e) {
+    toast("⚠️ " + e.message);
+  }
+}
+
+async function apiComplete() {
+  const id = currentEmergencyId;
+  if (!backendOnline || !id) return;
+  try {
+    await api("POST", `/api/emergencies/${id}/complete`);
+    loadVehicles();
+  } catch (e) {
+    console.warn(e.message);
+  }
+}
+
+async function loadHistory() {
+  const box = $("historyList");
+  const sec = $("history");
+  if (!backendOnline) return sec.classList.add("hidden");
+  try {
+    const list = await api("GET", "/api/emergencies");
+    if (!list.length) return sec.classList.add("hidden");
+    const icon = { accident: "🚨", medical: "🏥", fire: "🔥" };
+    box.innerHTML = list.slice(0, 5).map(e => `
+      <div class="history-item">
+        <span>${icon[e.type]} <strong>${e.id}</strong> · ${e.query || "Unknown location"}
+          ${e.vehicleId ? " · " + e.vehicleId : ""}</span>
+        <span class="status-pill status-${e.status}">${e.status}</span>
+      </div>`).join("");
+    sec.classList.remove("hidden");
+  } catch { /* ignore */ }
+}
+
+/* ---- redraw route lines after a map style change ---- */
+function redrawRoutes() {
+  if (!map || !routeData.length) return;
+  routeData.forEach((route, i) => {
+    const id = `emergency-route-${i}`;
+    if (map.getSource(id)) return;
+    map.addSource(id, {
+      type: "geojson",
+      data: { type: "Feature", geometry: route.geometry, properties: {} }
+    });
+    map.addLayer({
+      id, type: "line", source: id,
+      layout: { "line-join": "round", "line-cap": "round" },
+      paint: {
+        "line-color": i === currentRoute ? "#ff4545" : "#64748b",
+        "line-width": i === currentRoute ? 7 : 4,
+        "line-opacity": i === currentRoute ? .95 : .6
+      }
+    });
+  });
+}
+
+/* ---- light / dark theme ---- */
+function mapStyle() {
+  return root.dataset.theme === "light"
+    ? "mapbox://styles/mapbox/light-v11"
+    : "mapbox://styles/mapbox/dark-v11";
+}
+
+function applyTheme(theme) {
+  root.dataset.theme = theme;
+  localStorage.setItem("ers-theme", theme);
+  $("themeToggle").textContent = theme === "light" ? "🌙" : "☀️";
+  if (map) map.setStyle(mapStyle());
+}
+
+$("themeToggle").onclick = () =>
+  applyTheme(root.dataset.theme === "light" ? "dark" : "light");
+$("themeToggle").textContent = root.dataset.theme === "light" ? "🌙" : "☀️";
+
+/* ---- live location with permission handling ---- */
+$("locationInput").addEventListener("input", () => { pendingCoords = null; });
+
+$("locBtn").onclick = () => {
+  if (!navigator.geolocation) {
+    toast("Your browser does not support location access.");
+    return;
+  }
+
+  const btn = $("locBtn");
+  btn.disabled = true;
+  btn.textContent = "Locating...";
+
+  navigator.geolocation.getCurrentPosition(
+    async pos => {
+      const { longitude, latitude, accuracy } = pos.coords;
+      pendingCoords = [longitude, latitude];
+      let label = "My current location";
+
+      try {
+        const r = await fetch(
+          `https://api.mapbox.com/search/geocode/v6/reverse?longitude=${longitude}&latitude=${latitude}&access_token=${mapboxgl.accessToken}`
+        );
+        const d = await r.json();
+        label = d.features?.[0]?.properties?.full_address || d.features?.[0]?.properties?.name || label;
+      } catch { /* keep default label */ }
+
+      $("locationInput").value = label;
+      toast(`📍 Location detected (±${Math.round(accuracy)} m)`);
+      btn.disabled = false;
+      btn.textContent = "📡 Use My Location";
+    },
+    err => {
+      const msg = {
+        1: "Location permission denied. Click the lock icon in the address bar, allow Location, then try again.",
+        2: "Your position is unavailable. Check GPS / network and try again.",
+        3: "Location request timed out. Please try again."
+      }[err.code] || "Could not get your location.";
+      toast("⚠️ " + msg, 6000);
+      btn.disabled = false;
+      btn.textContent = "📡 Use My Location";
+    },
+    { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+  );
+};
+
+/* ---- start ---- */
+loadVehicles();
+setInterval(() => { if (document.visibilityState === "visible") loadVehicles(); }, 15000);

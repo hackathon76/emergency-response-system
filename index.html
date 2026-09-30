@@ -5,12 +5,15 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Emergency Response System</title>
 
-  <!-- Mapbox GL JS Stylesheet -->
-  <link href="https://api.mapbox.com/mapbox-gl-js/v3.30.0/mapbox-gl.css" rel="stylesheet">
-  <!-- Main Stylesheet -->
-  <link rel="stylesheet" href="stylee.css">
+  <!-- Apply saved theme before paint (no flash) -->
+  <script>
+    document.documentElement.dataset.theme =
+      localStorage.getItem("ers-theme") ||
+      (matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark");
+  </script>
 
-  <!-- Mapbox GL JS Library -->
+  <link href="https://api.mapbox.com/mapbox-gl-js/v3.30.0/mapbox-gl.css" rel="stylesheet">
+  <link rel="stylesheet" href="stylee.css">
   <script src="https://api.mapbox.com/mapbox-gl-js/v3.30.0/mapbox-gl.js"></script>
 </head>
 <body>
@@ -26,8 +29,12 @@
     <nav>
       <a href="#">Emergency</a>
       <a href="#">Vehicles</a>
-      <a href="#">Dashboard</a>
+      <a href="#history">History</a>
     </nav>
+    <div class="header-actions">
+      <span id="backendBadge" class="badge offline">● Offline mode</span>
+      <button id="themeToggle" class="icon-btn" aria-label="Toggle light/dark mode" title="Toggle theme">☀️</button>
+    </div>
   </header>
 
   <main>
@@ -36,7 +43,10 @@
         <div class="tag">EMERGENCY RESPONSE SYSTEM</div>
         <h1>Help when <span>every second matters.</span></h1>
         <p class="description">Report an emergency, find nearby registered emergency vehicles and dispatch the fastest available response.</p>
-        <button id="startButton">🚨 Report Emergency</button>
+        <div class="hero-actions">
+          <button id="startButton">🚨 Report Emergency</button>
+          <a class="call-link" href="tel:112">📞 Call 112</a>
+        </div>
       </div>
 
       <div class="status-card">
@@ -49,7 +59,7 @@
 
     <section id="emergencyPanel" class="panel hidden">
       <h2>Report Emergency</h2>
-      <p class="panel-subtitle">Enter the emergency location. The map will find registered vehicles nearby.</p>
+      <p class="panel-subtitle">Enter the emergency location or use your live location. The map will find registered vehicles nearby.</p>
 
       <label for="emergencyType">Emergency Type</label>
       <select id="emergencyType">
@@ -59,7 +69,10 @@
       </select>
 
       <label for="locationInput">Emergency Location</label>
-      <input id="locationInput" value="SUIIT, Burla, Sambalpur" placeholder="Example: SUIIT, Burla, Sambalpur">
+      <div class="input-row">
+        <input id="locationInput" value="SUIIT, Burla, Sambalpur" placeholder="Example: SUIIT, Burla, Sambalpur">
+        <button id="locBtn" class="ghost-btn" type="button">📡 Use My Location</button>
+      </div>
 
       <button id="findButton" class="find-button">📍 Find Location & Nearby Vehicles</button>
 
@@ -68,11 +81,16 @@
       <div id="results"></div>
       <div id="driverPanel" class="driver-panel hidden"></div>
     </section>
+
+    <section id="history" class="panel history hidden">
+      <h2>Recent Emergencies</h2>
+      <p class="panel-subtitle">Saved by the backend.</p>
+      <div id="historyList"></div>
+    </section>
   </main>
 
   <footer>Emergency Response System — Hackathon Prototype</footer>
 
-  <!-- Application Script -->
   <script src="script.js"></script>
 </body>
 </html>

@@ -16,6 +16,7 @@
 }
 
 body {
+  transition: background .3s, color .3s;
   position: relative;
   overflow-x: hidden;
   min-height: 100vh;
@@ -139,7 +140,7 @@ nav a {
 }
 
 nav a:hover {
-  color: white;
+  color: var(--text);
 }
 
 main {
@@ -256,7 +257,7 @@ button:disabled {
 }
 
 .stat strong {
-  color: #fff;
+  color: var(--text);
   font-size: 18px;
 }
 
@@ -289,7 +290,7 @@ input {
   height: 48px;
   padding: 0 14px;
   background: var(--bg);
-  color: #fff;
+  color: var(--text);
   border: 1px solid #343c48;
   border-radius: 8px;
   font-size: 15px;
@@ -400,7 +401,7 @@ input:focus {
 }
 
 .detail strong {
-  color: #fff;
+  color: var(--text);
   overflow-wrap: anywhere;
 }
 
@@ -505,7 +506,7 @@ input:focus {
 
 .route-option strong {
   display: block;
-  color: #fff;
+  color: var(--text);
   margin-bottom: 5px;
 }
 
@@ -608,7 +609,7 @@ footer {
 .back-home {
   margin-top: 18px;
   width: 100%;
-  color: #fff;
+  color: var(--text);
 }
 
 .back-home:hover {
@@ -625,7 +626,7 @@ footer {
   border: 1px solid #343c48;
   border-radius: 9px;
   font-size: 12px;
-  color: #fff;
+  color: var(--text);
   backdrop-filter: blur(8px);
 }
 
@@ -756,3 +757,45 @@ footer {
   .vehicle-top { flex-direction: column; }
   .driver-actions { flex-direction: column; }
 }
+
+/* ===== Upgrade: header actions, theme, location, history ===== */
+.header-actions { display: flex; align-items: center; gap: 12px; }
+.icon-btn { padding: 8px 12px; background: var(--card); border: 1px solid var(--border); color: var(--text); font-size: 16px; }
+.badge { font-size: 11px; font-weight: bold; padding: 5px 9px; border-radius: 99px; border: 1px solid var(--border); }
+.badge.online { color: var(--green); }
+.badge.offline { color: #f59e0b; }
+.hero-actions { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+.call-link { color: var(--text); text-decoration: none; font-weight: bold; padding: 13px 18px; border: 1px solid var(--border); border-radius: 8px; }
+.call-link:hover { border-color: var(--red); }
+.input-row { display: flex; gap: 10px; }
+.ghost-btn { background: var(--bg); color: var(--text); border: 1px solid var(--border); white-space: nowrap; }
+.history { margin-top: 0; }
+.history-item { display: flex; justify-content: space-between; gap: 12px; padding: 12px 0; border-top: 1px solid var(--border); font-size: 14px; color: var(--muted); }
+.history-item strong { color: var(--text); }
+.status-pill { font-size: 11px; font-weight: bold; text-transform: uppercase; }
+.status-completed { color: var(--green); }
+.status-dispatched { color: var(--blue); }
+.status-open, .status-cancelled { color: #f59e0b; }
+.toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); z-index: 50; max-width: 90%; padding: 12px 18px; border-radius: 10px; background: var(--card); color: var(--text); border: 1px solid var(--border); box-shadow: 0 10px 40px rgba(0,0,0,.35); font-size: 14px; }
+@media (max-width: 500px) { .input-row { flex-direction: column; } .header-actions .badge { display: none; } }
+
+/* ===== Light theme ===== */
+[data-theme="light"] { --bg: #f4f6fa; --card: #ffffff; --border: #dde2ea; --text: #111827; --muted: #5b6472; --green: #16a34a; --blue: #2563eb; }
+[data-theme="light"] body { background: #eef1f6; }
+[data-theme="light"] body::before { background: radial-gradient(circle at 18% 28%, rgba(255,69,69,.08), transparent 30%), radial-gradient(circle at 82% 68%, rgba(77,163,255,.12), transparent 32%), linear-gradient(120deg, #f6f8fc, #eef1f6 50%, #f6f8fc); }
+[data-theme="light"] body::after { opacity: .5; background-image: linear-gradient(rgba(0,0,0,.05) 1px, transparent 1px), linear-gradient(90deg, rgba(0,0,0,.05) 1px, transparent 1px); }
+[data-theme="light"] .ambient { opacity: .6; }
+[data-theme="light"] select, [data-theme="light"] input { border-color: #cbd2dc; }
+[data-theme="light"] .decline, [data-theme="light"] .back-button, [data-theme="light"] .back-home { background: #e5e9f0; }
+[data-theme="light"] .back-home:hover { background: #d5dbe5; }
+[data-theme="light"] .accept { color: #fff; }
+[data-theme="light"] .success, [data-theme="light"] .service-complete { background: #ecfdf3; border-color: #a7e3bd; }
+[data-theme="light"] .success-icon, [data-theme="light"] .service-complete-icon { background: #d1f5df; }
+[data-theme="light"] .driver-panel { background: #eef5fc; border-color: #b9d4ee; }
+[data-theme="light"] .recommended-label { background: #fee2e2; color: #dc2626; }
+[data-theme="light"] .traffic-legend { background: rgba(255,255,255,.93); border-color: #cbd2dc; }
+[data-theme="light"] .traffic-item { color: #334155; }
+[data-theme="light"] .detail small { color: #6b7280; }
+[data-theme="light"] .vehicle-marker { background: #dbeafe; }
+[data-theme="light"] footer { color: #6b7280; border-color: #dde2ea; }
+[data-theme="light"] .status-card, [data-theme="light"] .panel { box-shadow: 0 10px 40px rgba(15,23,42,.08); }
