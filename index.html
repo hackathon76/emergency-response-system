@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Emergency Response System</title>
+
+  <!-- Mapbox GL JS Stylesheet -->
+  <link href="https://api.mapbox.com/mapbox-gl-js/v3.30.0/mapbox-gl.css" rel="stylesheet">
+  <!-- Main Stylesheet -->
+  <link rel="stylesheet" href="stylee.css">
+
+  <!-- Mapbox GL JS Library -->
+  <script src="https://api.mapbox.com/mapbox-gl-js/v3.30.0/mapbox-gl.js"></script>
+</head>
+<body>
+  <div class="ambient" aria-hidden="true">
+    <div class="orb one"></div>
+    <div class="orb two"></div>
+    <div class="orb three"></div>
+  </div>
+  <div class="scanline" aria-hidden="true"></div>
+
+  <header>
+    <div class="logo">🚨 <span>ERS</span></div>
+    <nav>
+      <a href="#">Emergency</a>
+      <a href="#">Vehicles</a>
+      <a href="#">Dashboard</a>
+    </nav>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div class="hero-left">
+        <div class="tag">EMERGENCY RESPONSE SYSTEM</div>
+        <h1>Help when <span>every second matters.</span></h1>
+        <p class="description">Report an emergency, find nearby registered emergency vehicles and dispatch the fastest available response.</p>
+        <button id="startButton">🚨 Report Emergency</button>
+      </div>
+
+      <div class="status-card">
+        <div class="online"><span class="dot"></span>SYSTEM ONLINE</div>
+        <h2>Dispatch Status</h2>
+        <div class="stat"><span>Available Ambulances</span><strong id="ambulanceNumber">0</strong></div>
+        <div class="stat"><span>Available Fire Engines</span><strong id="fireNumber">0</strong></div>
+      </div>
+    </section>
+
+    <section id="emergencyPanel" class="panel hidden">
+      <h2>Report Emergency</h2>
+      <p class="panel-subtitle">Enter the emergency location. The map will find registered vehicles nearby.</p>
+
+      <label for="emergencyType">Emergency Type</label>
+      <select id="emergencyType">
+        <option value="accident">🚨 Road Accident</option>
+        <option value="medical">🏥 Medical Emergency</option>
+        <option value="fire">🔥 Fire Emergency</option>
+      </select>
+
+      <label for="locationInput">Emergency Location</label>
+      <input id="locationInput" value="SUIIT, Burla, Sambalpur" placeholder="Example: SUIIT, Burla, Sambalpur">
+
+      <button id="findButton" class="find-button">📍 Find Location & Nearby Vehicles</button>
+
+      <div id="map" class="hidden"></div>
+      <p id="mapNote" class="map-note hidden">Select a vehicle below. The selected driver will receive a simulated request.</p>
+      <div id="results"></div>
+      <div id="driverPanel" class="driver-panel hidden"></div>
+    </section>
+  </main>
+
+  <footer>Emergency Response System — Hackathon Prototype</footer>
+
+  <!-- Application Script -->
+  <script src="script.js"></script>
+</body>
+</html>
